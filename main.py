@@ -4,6 +4,7 @@ import numpy as np
 from keras.preprocessing.text import Tokenizer
 from keras.utils import pad_sequences
 from Levenshtein import distance as lev
+import re
 
 app = Flask(__name__)
 
@@ -81,12 +82,16 @@ def search_char():
 
     predictions = model.predict(input_sequence)[0]
     predicted_indices = np.argsort(predictions)[::-1]  # Sort predictions in descending order
-
+    empty_dict = []
     for index in predicted_indices:
         for word, idx in word_to_index.items():
+            pattern = r".*{}.*".format(re.escape(term))
+            matches = re.findall(pattern, word)
             if idx == index and word.startswith(term):
                 filtered_dict.append(word)
-
+            elif idx == index and len(matches) != 0:
+                empty_dict.append(word)
+    filtered_dict = filtered_dict if len(filtered_dict) != 0 else empty_dict
     ranking = [(question, quest_freq[question]) for question in filtered_dict]
     ranking.sort(key=lambda x: x[1], reverse=True)
     distances = calculate_distances(term, filtered_dict)
